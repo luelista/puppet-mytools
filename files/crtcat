@@ -1,0 +1,26 @@
+#!/bin/bash
+
+grep CERTIFICATE $1 > /dev/null
+
+if [ $? == "0" ]; then
+	if [ ! -z $2 ]; then
+		openssl x509 -noout -text -in $1|grep "CN="
+		echo ...
+		echo Comparing certificate and key. If one line follows, they match. If two lines follow, they mismatch.
+		echo CERTIFICATE: $1
+		echo PRIVATE-KEY: $2
+		MATCH=$((openssl x509 -noout -modulus -in $1 | openssl md5 ; openssl rsa -noout -modulus -in $2 | openssl md5) | uniq | wc -l)
+		if [ $MATCH == "1" ]; then
+			echo MATCH
+		else
+			echo MISMATCH
+		fi
+	else
+		openssl x509 -noout -text -in $1
+
+	fi
+else
+	openssl rsa -noout -text -in $1
+
+fi
+
