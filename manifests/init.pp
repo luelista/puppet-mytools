@@ -45,5 +45,10 @@ class maxweller-mytools {
     content => file('maxweller-mytools/re'),
     mode => "0755"
   }
+  file { '/usr/bin/crtpaste':
+    ensure => file,
+    content => file('maxweller-mytools/crtpaste'),
+    mode => "0755"
+  }
 
 }

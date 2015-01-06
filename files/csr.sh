@@ -108,7 +108,7 @@ fi
 echo "# -------------- END custom openssl.cnf -----" >> $CONFIG
 
 echo "Running OpenSSL..."
-openssl req -batch -config $CONFIG -newkey rsa:2048 -out $TARGET_DIR/${HOST}_csr.pem
+openssl req -batch -config $CONFIG -newkey rsa:4096 -out $TARGET_DIR/${HOST}_csr.pem
 echo "Copy the following Certificate Request and paste into CAcert website to obtain a Certificate."
 echo "When you receive your certificate, you 'should' name it something like ${HOST}_server.pem"
 echo

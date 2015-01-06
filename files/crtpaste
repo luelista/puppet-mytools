@@ -1,0 +1,94 @@
+#!/usr/bin/python
+# Certificate Management Tool
+# Copyright(c) 2015 Max Weller
+# https://github.com/max-weller/puppet-mytools/blob/master/LICENSE
+
+import sys,re,os
+
+targetdir = "/etc/ssl/mycerts/available/"
+linkdir = "/etc/ssl/mycerts/current/"
+
+chainfile = "/etc/ssl/certs/sub.class2.server.sha2.ca.pem"
+chainfile_url = "http://www.startssl.com/certs/class2/sha2/pem/sub.class2.server.sha2.ca.pem"
+
+def notalink(file):
+    return os.path.exists(file) and not os.path.islink(file)
+
+def linkcert(nick,date):
+   cert_link = linkdir+nick+"_cert.pem"
+   key_link = linkdir+nick+"_privatekey.pem"
+   cert_file = targetdir+nick+"_cert_"+date+".pem"
+   key_file = targetdir+nick+"_privatekey_"+date+".pem"
+   
+   if notalink(cert_link) or notalink(key_link):
+      sys.exit("There are non-link files in your link folder, refusing to overwrite them...")
+   if not os.path.isfile(cert_file):
+      sys.exit("Certificate file not found")
+   if not os.path.isfile(key_file):
+      sys.exit("Private key file not found")
+   
+   os.remove(cert_link)
+   os.symlink(cert_file, cert_link)
+   os.remove(key_link)
+   os.symlink(key_file, key_link)
+   print "Created new symlinks:"
+   print cert_link, "->", cert_file
+   print key_link, "->", key_file
+   print ""
+   if not os.path.exists(chainfile):
+      print "Certificate chain file not found, downloading ..."
+      os.system("wget -O \"%s\" \"%s\"" % (chainfile, chainfile_url))
+
+   print "Apache Config:"
+   print "\tSSLCertificateFile      "+cert_link
+   print "\tSSLCertificateKeyFile   "+key_link
+   print "\tSSLCertificateChainFile "+chainfile
+      
+   with open(chainfile, 'r') as f:
+       cacert = f.read()
+   with open(cert_file, 'r') as f:
+       mycert = f.read()
+   with open(linkdir+nick+"_chainedcert.pem", 'w') as outfile:
+       outfile.write(mycert+"\n"+cacert+"\n")
+
+   print ""
+   print "Created bundle for nginx etc.:"
+   print "\tssl_certificate "+linkdir+nick+"_chainedcert.pem;"
+   print "\tssl_certificate_key "+key_link+";"
+
+if len(sys.argv) == 2:
+   m = re.match("([a-z0-9_-]+)_[a-z]+_([0-9]+)(.pem)?", sys.argv[1])
+   if not m: sys.exit("Invalid parameter")
+   nick = m.group(1)
+   date = m.group(2)
+   linkcert(nick,date)
+   sys.exit()
+
+input = sys.stdin.read()
+
+m = re.match("CERTDATA ([a-z0-9_-]+) ([0-9]+)\n(-----BEGIN CERTIFICATE-----.*-----END CERTIFICATE-----)\n(-----BEGIN RSA PRIVATE KEY-----.*-----END RSA PRIVATE KEY-----).*", input, flags=re.S)
+
+nick = m.group(1)
+date = m.group(2)
+cert = m.group(3)
+privkey = m.group(4)
+
+cert_file = targetdir+nick+"_cert_"+date+".pem"
+key_file = targetdir+nick+"_privatekey_"+date+".pem"
+
+print "Target: ",cert_file
+
+if os.path.exists(key_file):
+   sys.exit("Refusing to overwrite key!")
+
+
+with open(cert_file, 'w') as outfile:
+    outfile.write(cert+"\n")
+with open(key_file, 'w') as outfile:
+    outfile.write(privkey+"\n")
+
+#print nick,"xxx",date,"cert:",cert,"priv:",privkey
+
+print "Success"
+
+linkcert(nick,date)
