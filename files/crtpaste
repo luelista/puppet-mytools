@@ -27,9 +27,9 @@ def linkcert(nick,date):
    if not os.path.isfile(key_file):
       sys.exit("Private key file not found")
    
-   os.remove(cert_link)
+   if os.path.islink(cert_link): os.remove(cert_link)
    os.symlink(cert_file, cert_link)
-   os.remove(key_link)
+   if os.path.islink(key_link): os.remove(key_link)
    os.symlink(key_file, key_link)
    print "Created new symlinks:"
    print cert_link, "->", cert_file
@@ -86,6 +86,8 @@ with open(cert_file, 'w') as outfile:
     outfile.write(cert+"\n")
 with open(key_file, 'w') as outfile:
     outfile.write(privkey+"\n")
+
+os.chmod(key_file, 0660)
 
 #print nick,"xxx",date,"cert:",cert,"priv:",privkey
 

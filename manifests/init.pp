@@ -50,5 +50,8 @@ class maxweller-mytools {
     content => file('maxweller-mytools/crtpaste'),
     mode => "0755"
   }
+  file { [ "/etc/ssl/mycerts/", "/etc/ssl/mycerts/available/", "/etc/ssl/mycerts/current/"]:
+    ensure => "directory",
+  }
 
 }
